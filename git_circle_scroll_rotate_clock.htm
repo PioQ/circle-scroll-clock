@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<html>
+<head>
+    <title>Circle Scroll Clock Git</title>
+	
+</head>
+<body>
+	
+	<div class="center">
+		<canvas id="cnv" ></canvas>
+	</div>
+
+</body>
+</html>
+
+
+<script>
+
+
+let charArray=[];
+
+let text= "Is everybody in? Is everybody in? Is everybody in? The ceremony is about to begin."
++" The entertainment for this evening is not new, you've seen this entertainment through and through,"
++" you have seen your birth, your life, your death ...you may recall all the rest. ― Jim Morrison, An American Prayer";
+
+let NumberOfChars=text.length;
+
+let canvas = document.getElementById("cnv"),
+	ctx = canvas.getContext("2d"),
+	width = canvas.width = window.innerWidth-20,
+	height = canvas.height = window.innerHeight-20;
+
+let	centerX = width/2;
+let	centerY = height/2;
+let circleTab=[];
+let angleTab=[];
+
+let ile = 180*1.5;
+let speed = 3.14/ile,
+angle=0;
+let x,y;
+let addToCounter=0;
+
+
+	document.body.style.background='black';
+	ctx.fillStyle='gold';
+
+const rectX=(centerX + Math.cos(angle)*200)-32;
+const rectY=(centerY + Math.sin(angle)*200)-40;
+
+////////////draw clock hours dots
+let hoursDotsTab=[];
+
+	for (let i=12; i>0; i--){
+		let angleHours=360/12; ///godziny	
+		angleHours*=(Math.PI/180)*(i-15);
+		let xHoursDots=centerX+Math.cos(angleHours)*150;
+		let yHoursDots=centerY+Math.sin(angleHours)*150;
+		hoursDotsTab.push({x:xHoursDots, y:yHoursDots})
+	}	
+	
+
+
+function circle(){
+	circleTab=[];
+	for(let i=0; i<360*1.5; i+=1){
+		let CPosition = {
+			x:0,
+			y:0
+		}
+
+		let x = centerX + Math.cos(angle)*300;
+		let y = centerY + Math.sin(angle)*300;
+		angle -= speed;
+
+		CPosition.x=x;
+		CPosition.y=y;
+		circleTab.push(CPosition);
+/////////////////?
+		angleTab.push(angle);
+	}
+}
+
+
+
+function init(){
+	addToCounter=0;
+	charArray=[];
+	for (let i=0; i<NumberOfChars; i+=1){
+			let charObjekt={
+			znak:"",
+			x:0,
+			y:0,
+			font:652,
+			color:"yellow",
+			licznik:5,
+			visible:false,
+			indeksiak:0,
+			bloker:false,
+			angleLetter:0
+			}
+			charObjekt.znak=text[i];
+			
+			charObjekt.x=circleTab[0].x;
+			charObjekt.y=circleTab[0].y;
+			
+			charObjekt.licznik+=addToCounter;
+
+			addToCounter+=14;//12
+
+			charArray.push(charObjekt);
+
+		};
+}
+
+function printLetter(znak, xAngle, yAngle, angle){
+//////////////scroll no.1	
+	ctx.save();
+	ctx.translate(xAngle, yAngle); //translacja do srodka znaku krok 1
+			
+	ctx.rotate(angle+(90*Math.PI/180)); ///zwyczajny po kole
+	ctx.fillStyle='yellow';
+	ctx.fillText(znak,-20,-10);
+	ctx.restore();
+	
+///////////scroll no.2
+	ctx.save();
+	ctx.translate(xAngle, yAngle);
+	ctx.rotate(-angle*angle);			///dziwaczny
+	
+	ctx.fillStyle='blue';
+	ctx.fillText(znak,50,80);			
+	
+	ctx.restore();
+
+
+/////////////scroll no.3  -  nie dla wolnych komputerów
+//	ctx.save();
+//	ctx.translate(xAngle, yAngle);
+//	ctx.rotate(-angle*angle*.3+(30*Math.PI/180));			///dziwaczny
+//	ctx.fillStyle='red';
+//	ctx.fillText(znak,180,10);
+//	ctx.restore();
+}
+
+////////////////////////////
+
+function getAngle(seconds, minutes, hours, milliseconds){
+	let degree=Math.PI/180;
+	/////////seconds
+	let angleSeconds=360/60; ///sekundy
+	angleSeconds*=(degree)*(seconds-15);
+	/////////minutes
+	let angleMinutes=360/60; ///minuty
+	angleMinutes*=(degree)*(minutes-15);
+	/////////hours
+	let angleHours=360/12; ///godziny
+	angleHours*=(degree)*(hours-15);
+	/////////seconds
+	angleSeconds+=(360/60)/1000*milliseconds*degree;
+	let xSeconds=centerX+Math.cos(angleSeconds)*(150-4);
+	let ySeconds=centerY+Math.sin(angleSeconds)*(150-4);
+	/////////minutes
+	angleMinutes+=(360/60)/60*seconds*degree;///powolny przesuw minut wraz ze wzrostem wartosci sekund (w 1 minucie)
+	let xMinutes=centerX+Math.cos(angleMinutes)*(120-2);
+	let yMinutes=centerY+Math.sin(angleMinutes)*(120-2);
+	/////////hours
+	angleHours+=(360/12)/60*minutes*degree; ///////--||-- (w 1 godzinie)
+	let xHours=centerX+Math.cos(angleHours)*(90-4);
+	let yHours=centerY+Math.sin(angleHours)*(90-4);
+	////////
+	
+	return {xSeconds: xSeconds,
+			ySeconds: ySeconds,
+			xMinutes: xMinutes,
+			yMinutes: yMinutes,
+			xHours: xHours,
+			yHours: yHours
+	};
+}
+
+function drawClock(){
+	let Czas = new Date();
+	let hours = Czas.getHours();
+	let minutes = Czas.getMinutes();
+	let seconds = Czas.getSeconds();
+	let milliseconds = Czas.getMilliseconds();
+	let xyTime=getAngle(seconds, minutes, hours, milliseconds);
+//////////tarcza
+	ctx.beginPath();
+	ctx.save();
+	ctx.fillStyle='#111111';
+	ctx.arc(centerX, centerY, 160, 0, 2*Math.PI, false);
+	ctx.fill();
+	ctx.restore();
+//////////clock dots
+	for (let i=0; i<hoursDotsTab.length; i++){
+		ctx.beginPath();
+		ctx.save();
+		ctx.fillStyle='#000077';
+		ctx.arc(hoursDotsTab[i].x, hoursDotsTab[i].y, 5, 0, 2*Math.PI, false);
+		ctx.fill();
+		ctx.restore();
+	}
+////////////Text on clock
+	ctx.save();
+	ctx.font="30px Courier";
+	ctx.fillStyle='#111177';
+	ctx.fillText('\u00A92016', centerX-1.5*30, centerY-1.5*30);
+	ctx.font="20px Courier";
+	ctx.fillText('PioQ', centerX-1*20, centerY+2.5*30);
+	ctx.restore();
+////////////hours	
+	ctx.save();
+	ctx.lineWidth=9;
+	ctx.lineCap="round";
+	ctx.strokeStyle='#0000cc';
+	ctx.beginPath();
+	ctx.moveTo(centerX,centerY);
+	ctx.lineTo(xyTime.xHours,xyTime.yHours);
+	ctx.stroke();
+	ctx.closePath();
+	ctx.restore();
+///////////circle
+	ctx.save();
+	ctx.fillStyle='#0000cc';
+	ctx.beginPath();
+	ctx.arc(centerX, centerY, 18, 0, 2*Math.PI, false);
+	ctx.fill();
+	ctx.restore();
+////////////
+////////////minutes
+	ctx.save();
+	ctx.lineWidth=6;
+	ctx.lineCap="round";
+	ctx.strokeStyle='#0000aa';
+	ctx.beginPath();
+	ctx.moveTo(centerX,centerY);
+	ctx.lineTo(xyTime.xMinutes,xyTime.yMinutes);
+	ctx.stroke();
+	ctx.closePath();
+	ctx.restore();
+///////////circle
+	ctx.save();
+	ctx.fillStyle='#0000aa';
+	ctx.beginPath();
+	ctx.arc(centerX, centerY, 12, 0, 2*Math.PI, false);
+	ctx.fill();
+	ctx.restore();
+////////////
+////////////seconds
+	ctx.save();
+	ctx.lineWidth=3;
+	ctx.lineCap="round";
+	ctx.strokeStyle='#000099';
+	ctx.beginPath();
+	ctx.moveTo(centerX,centerY);
+	ctx.lineTo(xyTime.xSeconds,xyTime.ySeconds);
+	ctx.stroke();
+	ctx.closePath();
+	ctx.restore();
+////////////
+///////////circle
+	ctx.save();
+	ctx.fillStyle='#000099';
+	ctx.beginPath();
+	ctx.arc(centerX, centerY, 6, 0, 2*Math.PI, false);
+	ctx.fill();
+	ctx.restore();
+////////////////////////////////////////////////////////////
+}
+
+function render(){
+
+	drawClock();
+
+	for (let i=0; i<charArray.length; i+=1){
+			
+		if (charArray[i].licznik<5 && charArray[i].bloker==false){
+			charArray[i].visible=true;
+		} 
+		//////////////////////////////////////////////////////////////////////////////////////////
+		if	(charArray[i].visible==true){			
+			charArray[i].indeksiak+=1;
+			if (charArray[i].indeksiak<circleTab.length-1){
+
+				x=circleTab[charArray[i].indeksiak].x;
+				y=circleTab[charArray[i].indeksiak].y;
+
+
+				if (x>=circleTab[15].x && y<centerY){
+					charArray[i].font*=.8;
+					ctx.font=(charArray[i].font)+"px Courier";
+				}
+
+				else if (x>=circleTab[15].x && y>=centerY){
+					charArray[i].font*=.8;
+					ctx.font=(charArray[i].font)+"px Courier";
+				}
+				else {
+					charArray[i].font=40;
+					ctx.font="40px Courier";
+				}
+
+				charArray[i].angleLetter=angleTab[charArray[i].indeksiak];           
+				printLetter(charArray[i].znak, x, y, charArray[i].angleLetter);
+			}
+		}
+		if (circleTab[charArray[text.length-1].indeksiak].x==circleTab[circleTab.length-1].x){
+			console.log("init");
+			init();
+		}
+		if (circleTab[charArray[i].indeksiak]==circleTab[circleTab.length-1]){//.x
+			charArray[i].visible=false;
+			charArray[i].bloker=true;
+			charArray[i].indeksiak=0;
+		}
+		charArray[i].licznik-=1;
+	}
+}	
+
+
+function scroll(){
+
+	ctx.clearRect(0,0,canvas.width, canvas.height);
+	render();
+ 	requestAnimationFrame(scroll);
+	 	
+}
+
+circle();
+init();
+scroll();
+</script>
